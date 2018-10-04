@@ -3,6 +3,7 @@
 #include <math.h>
 
 #define DIMENSION_3D 1	  // Enable to have 3D closest pair of points, If 0 - means input is 2D
+#define BRUTE_FORCE_METHOD 0  // Enable to see output using Brute-Force algorithm
 
 // Global declaration
 
@@ -31,10 +32,15 @@ float findMin(float L, float R, int *findMinFlag);
 float findMinInCenter(point p[], long long mid, float dminLR, long long size, point *A, point *B);
 long long getTotalLines(FILE *fp);
 long long totalLines;
+
 #if DIMENSION_3D	 // 3-Dimensional Enabled
-long long searchIndex(point p[], long long size, long long valX, long long valY, long long valZ);
+  long long searchIndex(point p[], long long size, long long valX, long long valY, long long valZ);
 #else
-long long searchIndex(point p[], long long size, long long valX, long long valY);
+  long long searchIndex(point p[], long long size, long long valX, long long valY);
+#endif
+
+#if BRUTE_FORCE_METHOD
+  float getDistbyBruteForce(point p[], long long size, point *A, point *B);
 #endif
 
 //**************** Print Point Values for Debug *******************
@@ -90,10 +96,10 @@ int qsortCompY (const void *arg1, const void *arg2)
 
 #if DIMENSION_3D	 // 3-Dimensional Enabled
 //qsort(p, size, sizeof( point), qsortCompZ);
-int qsortCompZ (const void *arg1, const void *arg2)
-{
-   return((int)(( point *)arg1)->z - (( point *)arg2)->z);
-}
+  int qsortCompZ (const void *arg1, const void *arg2)
+  {
+     return((int)(( point *)arg1)->z - (( point *)arg2)->z);
+  }
 #endif
 
 float findMinInCenter(point p[], long long mid, float dminLR, long long size, point *A, point *B)
@@ -229,9 +235,9 @@ long long getTotalLines(FILE *fp)
 }
 
 #if DIMENSION_3D	 // 3-Dimensional Enabled
-long long searchIndex(point p[], long long size, long long valX, long long valY, long long valZ)
+  long long searchIndex(point p[], long long size, long long valX, long long valY, long long valZ)
 #else
-long long searchIndex(point p[], long long size, long long valX, long long valY)
+  long long searchIndex(point p[], long long size, long long valX, long long valY)
 #endif
 {
   long long i =0;
@@ -251,6 +257,31 @@ long long searchIndex(point p[], long long size, long long valX, long long valY)
   return -1;
 }
 
+#if BRUTE_FORCE_METHOD
+  float getDistbyBruteForce(point p[], long long size, point *A, point *B)
+  {
+    float dmin = calculateDistance(p[0], p[1]);     // Get initial min Distance
+    float tempDist = 0.0;
+
+    *A = p[0];          // Updte closest point every time we find a dmin
+    *B = p[1];
+
+    for (long long i=1; i< size; i++)
+    {
+      for (long long j=i+1; j < size; j++)
+      {
+        tempDist = calculateDistance(p[i], p[j]);
+        if (tempDist < dmin)
+        {
+          dmin = tempDist;
+          *A = p[i];
+          *B = p[j];
+        }
+      }
+    }
+    return dmin;
+  }
+#endif
 
 int main (int argc, char *argv[])
 {
@@ -311,8 +342,14 @@ int main (int argc, char *argv[])
   printf(" ]\n");
 #endif
 
+
+#if BRUTE_FORCE_METHOD  // Brute Force Method
+  minDistance = getDistbyBruteForce(p, size, &A, &B);
+#else   // Divide and Conquer Method
   qsort(p, size, sizeof( point), qsortCompX);         // Sort the array with respect to X - coordinate
   minDistance = findClosestPair(p, size, &A, &B);
+#endif  // Divide and Conquer
+
 
 #if DIMENSION_3D	 // 3-Dimensional Enabled
   fprintf(outputFD, "%lld %lld %f\n", searchIndex(pOrg, size, A.x, A.y, A.z), searchIndex(pOrg, size, B.x, B.y, B.z), minDistance);       // Write the output to the file
@@ -320,7 +357,8 @@ int main (int argc, char *argv[])
   fprintf(outputFD, "%lld %lld %f\n", searchIndex(pOrg, size, A.x, A.y), searchIndex(pOrg, size, B.x, B.y), minDistance);       // Write the output to the file
 #endif
 
-  fclose(outputFD);
-  free(p);
-  return 0;
+fclose(outputFD);
+free(p);
+
+return 0;
 }
