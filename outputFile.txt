@@ -1,8 +1,8 @@
 Algorithm-D&C-2D:
 0 1 1.414214
-execution time: 0.005542
+execution time: 0.001168
 #################################
 
 Brute-force-2D:
 0 1 1.414214
-execution time: 0.328924
+execution time: 0.306813
