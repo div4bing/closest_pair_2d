@@ -18,6 +18,8 @@ int qsortCompY (const void *arg1, const void *arg2);
 float findClosestPair(point p[], long long size, point *A, point *B);
 float findMin(float L, float R, int *findMinFlag);
 float findMinInCenter(point p[], long long mid, float dminLR, long long size, point *A, point *B);
+long long getTotalLines(FILE *fp);
+long long totalLines;
 
 //**************** Print Point Values for Debug *******************
 void printPoints(point p[], long long size);
@@ -227,24 +229,73 @@ float findClosestPair(point p[], long long size, point *A, point *B)
   return dminAll;
 }
 
-int main (int argc, char *argv[])
+long long getTotalLines(FILE *fp)
 {
-  long long size = 65535;
-  point *p = malloc(size * sizeof(point));
+  long long totalLines = 0;
+  char string[100];
 
-  for(long long i=0; i<size; i++)
-  {
-    p[i].x= size - i;
-    p[i].y= size - i;
+  while(!feof(fp)) {
+    fgets(string, 100, fp);
+    totalLines++;
   }
 
+  totalLines--;
+
+  if(fseek(fp, 0L, SEEK_SET) == EOF) {
+    perror("Error while seeking to begining of file");
+    exit(0);
+  }
+
+  return totalLines;
+}
+
+int main (int argc, char *argv[])
+{
+  FILE *inputFD;
+  FILE *outputFD;
+  char string[100];
   point A, B;         // Closest Points
   float minDistance = 0.0;
 
+  if (argc != 3)                                                                // Make sure the number of input is correct
+  {
+    printf("Error! Invalid number of Arguments. Please run program as ./submission inputFile.txt outputFile.txt\n");
+    return -1;
+  }
+
+  inputFD = fopen(argv[1], "r");                                                // Open file for Reading the input
+  if (inputFD == NULL)
+  {
+    perror("Error opening the input file");
+    return -1;
+  }
+
+  totalLines = getTotalLines(inputFD);
+
+  long long size = totalLines;
+  point *p = malloc(totalLines * sizeof(point));
+
+  for (long long i=0; i<size; i++)
+  {
+    fgets(string, 100, inputFD);
+    sscanf(string, "%lld %lld", &(p[i].x), &(p[i].y));
+  }
+
+  fclose(inputFD);
+
+  outputFD = fopen(argv[2], "w");                                               // Open file for Writing the output
+  if (outputFD == NULL)
+  {
+    perror("Error opening the ouput file");
+    return -1;
+  }
+
+#if DEBUG_ENABLE                    // Print Only if Debug enabled
   printf("Input with Size: %lld -> [ ", size);
   for (long long i=0; i< size; i++)
     printf("(%lld, %lld),", p[i].x, p[i].y);
   printf(" ]\n");
+#endif
 
   qsort(p, size, sizeof( point), qsortCompX);         // Sort the array with respect to X - coordinate
 
@@ -258,7 +309,9 @@ int main (int argc, char *argv[])
 
   minDistance = findClosestPair(p, size, &A, &B);
 
-  printf("Minimum Distance is: %f and Close PointA: (%lld, %lld) and Close PointB: (%lld, %lld)\n", minDistance, A.x, A.y, B.x, B.y);
+  fprintf(outputFD, "(%lld, %lld) (%lld, %lld) %f\n", A.x, A.y, B.x, B.y, minDistance);       // Write the output to the file
 
+  fclose(outputFD);
+  free(p);
   return 0;
 }
