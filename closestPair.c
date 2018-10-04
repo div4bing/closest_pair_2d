@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
-#define DIMENSION_3D 1	  // Enable to have 3D closest pair of points, If 0 - means input is 2D
-#define BRUTE_FORCE_METHOD 0  // Enable to see output using Brute-Force algorithm
+#define DIMENSION_3D 0	  // Enable to have 3D closest pair of points, If 0 - means input is 2D
 
 // Global declaration
 
@@ -39,9 +39,7 @@ long long totalLines;
   long long searchIndex(point p[], long long size, long long valX, long long valY);
 #endif
 
-#if BRUTE_FORCE_METHOD
-  float getDistbyBruteForce(point p[], long long size, point *A, point *B);
-#endif
+float getDistbyBruteForce(point p[], long long size, point *A, point *B);
 
 //**************** Print Point Values for Debug *******************
 void printPoints(point p[], long long size);
@@ -150,7 +148,6 @@ float findMinInCenter(point p[], long long mid, float dminLR, long long size, po
   return dminCenter;
 }
 
-
 float findClosestPair(point p[], long long size, point *A, point *B)
 {
   float dminL = 0.0;    // Min distance in Left part
@@ -257,31 +254,29 @@ long long getTotalLines(FILE *fp)
   return -1;
 }
 
-#if BRUTE_FORCE_METHOD
-  float getDistbyBruteForce(point p[], long long size, point *A, point *B)
+float getDistbyBruteForce(point p[], long long size, point *A, point *B)
+{
+  float dmin = calculateDistance(p[0], p[1]);     // Get initial min Distance
+  float tempDist = 0.0;
+
+  *A = p[0];          // Updte closest point every time we find a dmin
+  *B = p[1];
+
+  for (long long i=1; i< size; i++)
   {
-    float dmin = calculateDistance(p[0], p[1]);     // Get initial min Distance
-    float tempDist = 0.0;
-
-    *A = p[0];          // Updte closest point every time we find a dmin
-    *B = p[1];
-
-    for (long long i=1; i< size; i++)
+    for (long long j=i+1; j < size; j++)
     {
-      for (long long j=i+1; j < size; j++)
+      tempDist = calculateDistance(p[i], p[j]);
+      if (tempDist < dmin)
       {
-        tempDist = calculateDistance(p[i], p[j]);
-        if (tempDist < dmin)
-        {
-          dmin = tempDist;
-          *A = p[i];
-          *B = p[j];
-        }
+        dmin = tempDist;
+        *A = p[i];
+        *B = p[j];
       }
     }
-    return dmin;
   }
-#endif
+  return dmin;
+}
 
 int main (int argc, char *argv[])
 {
@@ -342,20 +337,31 @@ int main (int argc, char *argv[])
   printf(" ]\n");
 #endif
 
-
-#if BRUTE_FORCE_METHOD  // Brute Force Method
-  minDistance = getDistbyBruteForce(p, size, &A, &B);
-#else   // Divide and Conquer Method
-  qsort(p, size, sizeof( point), qsortCompX);         // Sort the array with respect to X - coordinate
-  minDistance = findClosestPair(p, size, &A, &B);
-#endif  // Divide and Conquer
-
+clock_t begin = clock();
+qsort(p, size, sizeof( point), qsortCompX);         // Sort the array with respect to X - coordinate
+minDistance = findClosestPair(p, size, &A, &B);
 
 #if DIMENSION_3D	 // 3-Dimensional Enabled
+  fprintf(outputFD, "Algorithm-D&C-3D:\n");       // Write the output to the file
   fprintf(outputFD, "%lld %lld %f\n", searchIndex(pOrg, size, A.x, A.y, A.z), searchIndex(pOrg, size, B.x, B.y, B.z), minDistance);       // Write the output to the file
 #else
+  fprintf(outputFD, "Algorithm-D&C-2D:\n");       // Write the output to the file
   fprintf(outputFD, "%lld %lld %f\n", searchIndex(pOrg, size, A.x, A.y), searchIndex(pOrg, size, B.x, B.y), minDistance);       // Write the output to the file
 #endif
+clock_t end = clock();
+fprintf(outputFD, "execution time: %f\n#################################\n\n", ((double)(end - begin) / CLOCKS_PER_SEC));       // Write execution time to the file
+
+begin = clock();
+minDistance = getDistbyBruteForce(pOrg, size, &A, &B);  // Brute Force Approach
+#if DIMENSION_3D	 // 3-Dimensional Enabled
+  fprintf(outputFD, "Brute-force-3D:\n");       // Write the output to the file
+  fprintf(outputFD, "%lld %lld %f\n", searchIndex(pOrg, size, A.x, A.y, A.z), searchIndex(pOrg, size, B.x, B.y, B.z), minDistance);       // Write the output to the file
+#else
+  fprintf(outputFD, "Brute-force-2D:\n");       // Write the output to the file
+  fprintf(outputFD, "%lld %lld %f\n", searchIndex(pOrg, size, A.x, A.y), searchIndex(pOrg, size, B.x, B.y), minDistance);       // Write the output to the file
+#endif
+end = clock();
+fprintf(outputFD, "execution time: %f\n", ((double)(end - begin) / CLOCKS_PER_SEC));       // Write execution time to the file
 
 fclose(outputFD);
 free(p);
